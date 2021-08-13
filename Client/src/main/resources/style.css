@@ -1,0 +1,31 @@
+.root{
+-fx-front-size: 18;
+-fx-background-image: url("https://kartinkin.com/uploads/posts/2020-09/1600185070_6-p-golubovatii-fon-9.jpg");
+/*-fx-background-image: url("/image/1.jpg");
+-fx-background-size: 100% 100%;*/
+}
+
+.button{
+-fx-background-color: antiquewhite;
+}
+.button:hover{
+-fx-background-color: navajowhite;
+-fx-text-fill: teal;
+-fx-font-weight: bold;
+-fx-font-size: 20;
+}
+#addBtn{
+-fx-background-color: #60bfe2;
+}
+
+.text-area{
+-fx-background-color: cornsilk;
+-fx-control-inner-background: cornsilk;
+-fx-text-fill: blue;
+-fx-text-alignment: center;
+-fx-highlight-text-fill: #000000;
+-fx-highlight-fill: coral;
+}
+.text-area .text{
+-fx-text-alignment: center;
+}
