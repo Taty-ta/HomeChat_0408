@@ -30,7 +30,7 @@ public class Server {
                 this.socket = this.server.accept();// сервер ждет пока к нему кто нибудь подключится
                 // если кто то подключился, создается сокет
                 System.out.println("Client connected");
-
+                socket.setSoTimeout(5000);
                 // если один эндом вышел, нужно что бы он удалился из списка (методы подписаться и отписаться)
                 new ClientHandler(this.socket, this);
             }

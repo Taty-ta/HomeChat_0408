@@ -29,11 +29,11 @@ public class ClientHandler {
             this.out = new DataOutputStream(socket.getOutputStream());
             (new Thread(() -> {
                 try {
-                    socket.setSoTimeout(5000);
+
                     String str;
                     String[] token;
                     // аунтификация
-                    while(true) {
+                    while (true) {
                         str = this.in.readUTF();
                         if (str.equals("/end")) {
                             this.sendMsg("/end");
@@ -43,14 +43,18 @@ public class ClientHandler {
                         //проверка логина на вхождение
                         if (str.startsWith("/auth ")) {
                             token = str.split("\\s+");
+                            try {
                             this.nickname = server.getAuthService().getNicknameByLoginAndPassword(token[1], token[2]);
                             this.login = token[1];
+                            } catch (ArrayIndexOutOfBoundsException e) {
+                                System.out.println("Ввели только логин или только пароль");
+                            }
                             if (this.nickname != null) {
                                 if (!server.isLoginAuthenticated(this.login)) {
                                     this.sendMsg("/authok " + this.nickname);
                                     server.subscribe(this);
                                     this.authenticated = true;
-                                   socket.setSoTimeout(0);// аунтиф прошли, что бы нас не выбрасывало
+                                    socket.setSoTimeout(0);// аунтиф прошли, что бы нас не выбрасывало
                                     break;
                                 }
 
@@ -73,22 +77,22 @@ public class ClientHandler {
                             }
                         }
 */
-                   if (str.startsWith("/reg")){
-                       token  = str.split("\\s+");
-                       if (token.length < 4){
-                           continue;
-                       }
-                       boolean regOk = server.getAuthService().registration(token[1], token[2], token[3]);
-                       if (regOk) {
-                           this.sendMsg("/regok");
-                       } else {
-                           this.sendMsg("/regno");
-                       }
-                   }
+                        if (str.startsWith("/reg")) {
+                            token = str.split("\\s+");
+                            if (token.length < 4) {
+                                continue;
+                            }
+                            boolean regOk = server.getAuthService().registration(token[1], token[2], token[3]);
+                            if (regOk) {
+                                this.sendMsg("/regok");
+                            } else {
+                                this.sendMsg("/regno");
+                            }
+                        }
 
                     }
 // цикл работы
-                    while(this.authenticated) {
+                    while (this.authenticated) {
                         str = this.in.readUTF();
                         if (str.startsWith("/")) {
                             if (str.equals("/end")) {
@@ -107,11 +111,12 @@ public class ClientHandler {
                             server.broadcastMsg(this, str);
                         }
                     }
-                }catch(SocketTimeoutException e){
+
+                } catch (SocketTimeoutException e) {
                     sendMsg("/end");
 
-                }catch (IOException var14) {
-                    var14.printStackTrace();
+                } catch (IOException e) {
+                    e.printStackTrace();
 
                 } finally {
                     server.unsubscribe(this);
