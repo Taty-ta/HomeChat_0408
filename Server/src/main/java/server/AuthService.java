@@ -17,5 +17,6 @@ public interface AuthService {
      * @return
      */
     boolean registration(String var1, String var2, String var3);
-
+  // принимает старый ник и новый ник
+    boolean changeNick(String oldNickname, String newNickname);
 }

@@ -1,141 +1,109 @@
 package server;
 
-
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Scanner;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public class Server {
     private ServerSocket server;
     private Socket socket;
+    private final int PORT = 8189;
 
-    private static final int PORT = 8189;
-
-    private List<ClientHandler> clients = new CopyOnWriteArrayList<>();//  // список подключившихся клиентов, храним в арайлисте, он потокобезопасный;
-    private AuthService authService = new SimpleAuthService();
+    private List<ClientHandler> clients;
+    private AuthService authService;
 
     public Server() {
+        clients = new CopyOnWriteArrayList<>();
+//        authService = new SimpleAuthService();
+        //======проверяем подключились ли к БД========//
+        if (!SQLHandler.connect()) {
+            throw new RuntimeException("Не удалось подключиться к БД");
+        }
+        authService = new DBAuthServise();
+        //==============//
         try {
-            server = new ServerSocket(PORT);// запускаем
+            server = new ServerSocket(PORT);
             System.out.println("Server started!");
 
             while (true) {
-                this.socket = this.server.accept();// сервер ждет пока к нему кто нибудь подключится
-                // если кто то подключился, создается сокет
+                socket = server.accept();
                 System.out.println("Client connected");
-                socket.setSoTimeout(5000);
-                // если один эндом вышел, нужно что бы он удалился из списка (методы подписаться и отписаться)
-                new ClientHandler(this.socket, this);
+                new ClientHandler(socket, this);
             }
-
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
-
+            SQLHandler.disconnect(); // отключаемся от БД
             try {
-                server.close();// в блоке файнали сервер нужно закрыть
+                server.close();
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
-
     }
 
     public void broadcastMsg(ClientHandler sender, String msg) {
-
         String message = String.format("[ %s ]: %s", sender.getNickname(), msg);
-        Iterator var4 = this.clients.iterator();
-
-        while (var4.hasNext()) {
-
-            ClientHandler c = (ClientHandler) var4.next();
+        //==============//
+        SQLHandler.addMessage(sender.getNickname(), "null", msg, "once upon a time");
+        //==============//
+        for (ClientHandler c : clients) {
             c.sendMsg(message);
-
         }
     }
 
     public void privateMsg(ClientHandler sender, String receiver, String msg) {
         String message = String.format("[ %s ] to [ %s ] : %s", sender.getNickname(), receiver, msg);
-        Iterator var5 = this.clients.iterator();
-
-        ClientHandler c;
-        do {
-            if (!var5.hasNext()) {
-                sender.sendMsg("Not found user: " + receiver);
+        for (ClientHandler c : clients) {
+            if (c.getNickname().equals(receiver)) {
+                c.sendMsg(message);
+                //==============//
+                SQLHandler.addMessage(sender.getNickname(), receiver, msg, "once upon a time");
+                //==============//
+                if (!c.equals(sender)) {
+                    sender.sendMsg(message);
+                }
                 return;
             }
-
-            c = (ClientHandler) var5.next();
-        } while (!c.getNickname().equals(receiver));
-
-        c.sendMsg(message);
-        if (!c.equals(sender)) {
-            sender.sendMsg(message);
         }
-
+        sender.sendMsg("Not found user: "+ receiver);
     }
 
     public boolean isLoginAuthenticated(String login) {
         for (ClientHandler c : clients) {
-            if (c.getLogin().equals(login)) {
+            if(c.getLogin().equals(login)){
                 return true;
             }
         }
         return false;
-
     }
-      /*  Iterator var2 = this.clients.iterator();
-
-        ClientHandler c;
-        do {
-            if (!var2.hasNext()) {
-                return false;
-            }
-
-            c = (ClientHandler)var2.next();
-        } while(!c.getLogin().equals(login));
-
-        return true;*/
-    // }
 
     public void broadcastClientList() {
         StringBuilder sb = new StringBuilder("/clientlist");
-        Iterator var2 = this.clients.iterator();
-
-        while (var2.hasNext()) {
-            ClientHandler c = (ClientHandler) var2.next();
+        for (ClientHandler c : clients) {
             sb.append(" ").append(c.getNickname());
         }
 
         String message = sb.toString();
-        Iterator var6 = this.clients.iterator();
-
-        while (var6.hasNext()) {
-            ClientHandler c = (ClientHandler) var6.next();
+        for (ClientHandler c : clients) {
             c.sendMsg(message);
         }
-
     }
 
     public void subscribe(ClientHandler clientHandler) {
-        this.clients.add(clientHandler);
-        this.broadcastClientList();
+        clients.add(clientHandler);
+        broadcastClientList();
     }
 
     public void unsubscribe(ClientHandler clientHandler) {
-        this.clients.remove(clientHandler);
-        this.broadcastClientList();
+        clients.remove(clientHandler);
+        broadcastClientList();
     }
 
     public AuthService getAuthService() {
-        return this.authService;
+        return authService;
     }
 }
 

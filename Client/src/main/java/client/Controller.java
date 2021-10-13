@@ -140,6 +140,12 @@ public class Controller implements Initializable {
                                     }
                                 });
                             }
+                            //=====установка нового никнейма=========//
+                            if (str.startsWith("/yournickis ")) {
+                                nickname = str.split(" ")[1];
+                                setTitle(nickname);
+                            }
+                            //==============//
                         } else {
                             textArea.appendText(str + "\n");
                         }

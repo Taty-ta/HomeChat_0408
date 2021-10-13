@@ -43,24 +43,23 @@ public class ClientHandler {
                         //проверка логина на вхождение
                         if (str.startsWith("/auth ")) {
                             token = str.split("\\s+");
-                            try {
-                            this.nickname = server.getAuthService().getNicknameByLoginAndPassword(token[1], token[2]);
-                            this.login = token[1];
-                            } catch (ArrayIndexOutOfBoundsException e) {
-                                System.out.println("Ввели только логин или только пароль");
-                            }
-                            if (this.nickname != null) {
-                                if (!server.isLoginAuthenticated(this.login)) {
-                                    this.sendMsg("/authok " + this.nickname);
+                            nickname = server.getAuthService()
+                                    .getNicknameByLoginAndPassword(token[1], token[2]);
+                            login = token[1];
+                            if (nickname != null) {
+                                if (!server.isLoginAuthenticated(login)) {
+                                    sendMsg("/authok " + nickname);
                                     server.subscribe(this);
-                                    this.authenticated = true;
-                                    socket.setSoTimeout(0);// аунтиф прошли, что бы нас не выбрасывало
+                                    authenticated = true;
+                                    //==============//
+                                    sendMsg(SQLHandler.getMessageForNick(nickname));
+                                    //==============//
                                     break;
+                                } else {
+                                    sendMsg("С этим логином уже вошли");
                                 }
-
-                                this.sendMsg("С этим логином уже вошли");
                             } else {
-                                this.sendMsg("Неверный логин / пароль");
+                                sendMsg("Неверный логин / пароль");
                             }
                         }
 
@@ -91,7 +90,7 @@ public class ClientHandler {
                         }
 
                     }
-// цикл работы
+// цикл работы // цикл работы
                     while (this.authenticated) {
                         str = this.in.readUTF();
                         if (str.startsWith("/")) {
@@ -107,6 +106,26 @@ public class ClientHandler {
                                     server.privateMsg(this, token[1], token[2]);
                                 }
                             }
+                            //==============//
+                            if (str.startsWith("/chnick ")) {
+                                 token = str.split("\\s+", 2);
+                                if (token.length < 2) {
+                                    continue;
+                                }
+                                if (token[1].contains(" ")) {
+                                    sendMsg("Ник не может содержать пробелов");
+                                    continue;
+                                }
+                                if (server.getAuthService().changeNick(this.nickname, token[1])) {
+                                    sendMsg("/yournickis " + token[1]);
+                                    sendMsg("Ваш ник изменен на " + token[1]);
+                                    this.nickname = token[1];
+                                    server.broadcastClientList();
+                                } else {
+                                    sendMsg("Не удалось изменить ник. Ник " + token[1] + " уже существует");
+                                }
+                            }
+                            //==============//
                         } else {
                             server.broadcastMsg(this, str);
                         }
