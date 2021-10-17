@@ -21,7 +21,6 @@ import javafx.stage.WindowEvent;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.EOFException;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.URL;
@@ -54,6 +53,9 @@ public class Controller implements Initializable {
     private Stage stage;
     private Stage regStage;
     private RegController regController;
+    ///==============///
+    private String login;
+    ///==============///
 
     public void setAuthenticated(boolean authenticated) {
       //проверяем аунтефикацию, в зависимости от результата - видимость панелей
@@ -67,6 +69,9 @@ public class Controller implements Initializable {
 
         if (!authenticated) {
             nickname = "";
+            ///======не прошла аунтификация========///
+            History.stop();
+            ///==============///
         }
         setTitle(nickname);
         textArea.clear();
@@ -111,6 +116,10 @@ public class Controller implements Initializable {
                             if (str.startsWith("/authok")) {
                                 nickname = str.split("\\s")[1];
                                 setAuthenticated(true);
+                                ///==============///
+                                textArea.appendText(History.getLast100LinesOfHistory(login));
+                                History.start(login);
+                                ///==============///
                                 break;
                             }
                             if (str.equals("/regok")) {
@@ -148,10 +157,11 @@ public class Controller implements Initializable {
                             //==============//
                         } else {
                             textArea.appendText(str + "\n");
+                            ///========сообщения в файл======///
+                            History.writeLine(str);
+                            ///==============///
                         }
                     }
-                } catch (EOFException e) {
-                    e.printStackTrace();
                 } catch (IOException e) {
                     e.printStackTrace();
                 } finally {
@@ -186,7 +196,9 @@ public class Controller implements Initializable {
             connect();
         }
 
-        String login = loginField.getText().trim();
+        ///==============///
+        login = loginField.getText().trim();
+        ///==============///
         String password = passwordField.getText().trim();
         String msg = String.format("/auth %s %s", login, password);
 

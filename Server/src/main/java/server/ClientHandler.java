@@ -9,8 +9,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
-import java.net.SocketException;
-import java.net.SocketTimeoutException;
+
 
 public class ClientHandler {
     Socket socket;
@@ -30,19 +29,17 @@ public class ClientHandler {
             (new Thread(() -> {
                 try {
 
-                    String str;
-                    String[] token;
                     // аунтификация
                     while (true) {
-                        str = this.in.readUTF();
+                        String str = in.readUTF();
                         if (str.equals("/end")) {
-                            this.sendMsg("/end");
+                            sendMsg("/end");
                             System.out.println("Client disconnected");
                             break;
                         }
                         //проверка логина на вхождение
                         if (str.startsWith("/auth ")) {
-                            token = str.split("\\s+");
+                            String[] token = str.split("\\s+");
                             nickname = server.getAuthService()
                                     .getNicknameByLoginAndPassword(token[1], token[2]);
                             login = token[1];
@@ -52,7 +49,7 @@ public class ClientHandler {
                                     server.subscribe(this);
                                     authenticated = true;
                                     //==============//
-                                    sendMsg(SQLHandler.getMessageForNick(nickname));
+                                    //    sendMsg(SQLHandler.getMessageForNick(nickname));
                                     //==============//
                                     break;
                                 } else {
@@ -77,7 +74,7 @@ public class ClientHandler {
                         }
 */
                         if (str.startsWith("/reg")) {
-                            token = str.split("\\s+");
+                            String[] token = str.split("\\s+");
                             if (token.length < 4) {
                                 continue;
                             }
@@ -91,24 +88,28 @@ public class ClientHandler {
 
                     }
 // цикл работы // цикл работы
-                    while (this.authenticated) {
-                        str = this.in.readUTF();
+                    // цикл работы
+                    while (authenticated) {
+                        String str = in.readUTF();
+
                         if (str.startsWith("/")) {
                             if (str.equals("/end")) {
-                                this.sendMsg("/end");
+                                sendMsg("/end");
                                 System.out.println("Client disconnected");
                                 break;
                             }
 
                             if (str.startsWith("/w")) {
-                                token = str.split("\\s+", 3);
-                                if (token.length >= 3) {
-                                    server.privateMsg(this, token[1], token[2]);
+                                String[] token = str.split("\\s+", 3);
+                                if (token.length < 3) {
+                                    continue;
                                 }
+                                server.privateMsg(this, token[1], token[2]);
                             }
+
                             //==============//
                             if (str.startsWith("/chnick ")) {
-                                 token = str.split("\\s+", 2);
+                                String[] token = str.split("\\s+", 2);
                                 if (token.length < 2) {
                                     continue;
                                 }
@@ -130,9 +131,6 @@ public class ClientHandler {
                             server.broadcastMsg(this, str);
                         }
                     }
-
-                } catch (SocketTimeoutException e) {
-                    sendMsg("/end");
 
                 } catch (IOException e) {
                     e.printStackTrace();
